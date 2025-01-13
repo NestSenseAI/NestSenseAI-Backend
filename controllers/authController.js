@@ -48,11 +48,6 @@ exports.register = async (req, res) => {
           updated_at: new Date(),
         },
       ]);
-
-    if (error) {
-      return res.status(500).json({ error: error.message });
-    }
-
     res.status(201).json({ message: "User registered successfully" });
   } catch (err) {
     console.error("Error during registration:", err);
@@ -63,21 +58,66 @@ exports.register = async (req, res) => {
 //route to get personal details and store them
 exports.getDetails = async(req, res) => {
   console.log("getting details");
-  const {}
+  const {name , age , country , state , email} = req.body;
+  console.log(name , age , country);
+  try{
+    //insert the personal details into the user table
+    const {data , error } = await supabase
+    .from('users')
+    .insert([
+      {
+        name : name,
+        email : email,
+        country : country,
+        state : state,
+        age : age
+      },
+    ]);
+    res.status(201).json({message : "details entered successfully"})
+  }catch(error){
+    console.error("Error during registration:", err);
+    res.status(500).json({ error: "User registration failed" });
+  }
 }
 
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
+  console.log("login route hit")
+  console.log(email , password)
   try {
-    const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ error: "User not found" });
+    //authenticate the user
+    const {data , error} = await supabase
+    .from('login')
+    .select('email,password_hash')
+    .eq('email',email)
+    .single(); //single ensures we get only one result
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ error: "Invalid credentials" });
+    console.log(data);
 
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "1h" });
-    res.status(200).json({ token, user });
+    if (error || ! data){
+      return res.status(400).json({ message: 'Invalid email or password.' });
+    }
+
+    //compare the password with the stored hashed password using bcrypt
+    const passwordMatch = await bcrypt.compare(password , data.password_hash);
+    console.log(passwordMatch);
+    if(!passwordMatch){
+      return res.status(400).json({ message: 'Invalid email or password.' });
+    }
+
+    // If email and password are correct, generate a JWT token
+    const token = jwt.sign(
+      { email: data.email },  // Payload, you can add more info here if needed
+      process.env.JWT_SECRET,             // Secret key to sign the token
+      { expiresIn: '1h' }     // Expiration time for the token (1 hour in this case)
+    );
+
+    // Send the token to the frontend
+    res.status(200).json({
+      message: 'Login successful',
+      token,  // Send back the JWT token
+    });
   } catch (err) {
     res.status(500).json({ error: "Login failed" });
   }

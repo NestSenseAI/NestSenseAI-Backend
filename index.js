@@ -8,7 +8,7 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { createClient } = require('@supabase/supabase-js');
 
 //import the routes
-const {register , login} = require('./controllers/authController.js')
+const {register , getDetails , login} = require('./controllers/authController.js')
 
 const app = express();
 
@@ -91,7 +91,10 @@ app.get('/', (req, res) => {
 });
 
 app.post('/register' , register);
+app.post('/getDetails',getDetails);
+app.post('/login',login)
 // Google OAuth Routes
+
 app.get(
   '/auth/google',
   passport.authenticate('google', { scope: ['profile', 'email'] })
