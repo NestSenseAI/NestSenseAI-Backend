@@ -5,6 +5,10 @@ const cors = require('cors');
 const passport = require('passport');
 const session = require('express-session');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const { createClient } = require('@supabase/supabase-js');
+
+//import the routes
+const {register , getDetails , login} = require('./controllers/authController.js')
 
 const app = express();
 
@@ -25,11 +29,38 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
+//supabase connection
+// Supabase credentials from .env
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_KEY;
+
+// Initialize Supabase client
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+//test the connection - this url can be checked manually to verify whether supabase is connected or not
+app.get('/test-supabase', async (req, res) => {
+  try {
+    // Perform a lightweight query to check the connection
+    const { data, error } = await supabase.from('users').select('*').limit(1); // Replace 'test_table' with any table name in your Supabase DB
+
+    if (error) {
+      console.error('Supabase error:', error);
+      res.status(500).send('Supabase connection failed.');
+      return;
+    }
+
+    console.log('Supabase is connected!');
+    res.status(200).send('Supabase is connected!');
+  } catch (err) {
+    console.error('Error connecting to Supabase:', err);
+    res.status(500).send('Error connecting to Supabase.');
+  }
+});
+
+
 // MongoDB Connection
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log('Connected to MongoDB'))
-  .catch((err) => console.error('MongoDB connection error:', err));
+
+
 
 // Passport Google OAuth
 passport.use(
@@ -54,23 +85,16 @@ passport.deserializeUser((user, done) => {
   done(null, user);
 });
 
-// Models
-const dailyEntrySchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Link to user
-  date: { type: String, unique: true, required: true }, // Date in YYYY-MM-DD format
-  mood: { type: Number, required: true }, // Mood on a scale (e.g., 1-10)
-  energy: { type: Number, required: true }, // Energy level on a scale
-  symptoms: { type: [String], default: [] }, // Array of symptoms
-});
-
-const DailyEntry = mongoose.model('DailyEntry', dailyEntrySchema);
-
 // Routes
 app.get('/', (req, res) => {
   res.send('Welcome to the NestSenseAI Backend!');
 });
 
+app.post('/register' , register);
+app.post('/getDetails',getDetails);
+app.post('/login',login)
 // Google OAuth Routes
+
 app.get(
   '/auth/google',
   passport.authenticate('google', { scope: ['profile', 'email'] })
@@ -83,42 +107,6 @@ app.get(
     res.redirect('/'); // Redirect after successful login
   }
 );
-
-// Daily Wellness Tracker Routes
-app.post('/api/daily-entry', async (req, res) => {
-  const { userId, date, mood, energy, symptoms } = req.body;
-
-  try {
-    // Check if an entry for the same date already exists
-    const existingEntry = await DailyEntry.findOne({ userId, date });
-    if (existingEntry) {
-      return res.status(400).json({ message: 'Entry for this date already exists.' });
-    }
-
-    // Save the new entry
-    const newEntry = new DailyEntry({ userId, date, mood, energy, symptoms });
-    await newEntry.save();
-
-    res.status(201).json({ message: 'Daily entry saved successfully!' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error saving daily entry', error });
-  }
-});
-
-app.get('/api/daily-entry/:date', async (req, res) => {
-  const { userId } = req.query; // Get userId from query parameters
-  const { date } = req.params;
-
-  try {
-    const entry = await DailyEntry.findOne({ userId, date });
-    if (!entry) {
-      return res.status(404).json({ message: 'Daily entry not found' });
-    }
-    res.status(200).json(entry);
-  } catch (error) {
-    res.status(500).json({ message: 'Error retrieving daily entry', error });
-  }
-});
 
 // Start Server
 const PORT = process.env.PORT || 5000;

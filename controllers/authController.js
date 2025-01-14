@@ -1,56 +1,124 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
-const User = require("../models/User");
+const supabase = require("./supabase");
 
-exports.register = async (req, res) => {
-  const { name, email, password } = req.body;
+//function to hash the password
+const hashPassword = async (password) => {
   try {
-    // Hash the password before saving the user
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = new User({ name, email, password: hashedPassword });
-    await user.save();
-    res.status(201).json({ message: "User registered successfully" });
-  } catch (err) {
-    res.status(500).json({ error: "User registration failed", details: err.message });
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    return hashedPassword;
+  } catch (error) {
+    console.error("Error hashing password:", error);
   }
 };
+
+//route to handle email and password registration
+exports.register = async (req, res) => {
+  console.log("register route hit");
+  const { name, email, password } = req.body;
+
+  try {
+    // Check if the email already exists
+    const { data: existingUser, error: emailCheckError, count } = await supabase
+      .from('login')
+      .select('email', { count: 'exact' })
+      .eq('email', email);
+
+    if (emailCheckError) {
+      return res.status(500).json({ error: emailCheckError.message });
+    }
+
+    // If no rows found, count will be 0
+    if (count > 0) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+
+    // Hash the password
+    const hashedPassword = await hashPassword(password);
+
+    // Insert the user into the login table
+    const { data, error } = await supabase
+      .from('login')
+      .insert([
+        {
+          email,
+          password_hash: hashedPassword,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+    res.status(201).json({ message: "User registered successfully" });
+  } catch (err) {
+    console.error("Error during registration:", err);
+    res.status(500).json({ error: "User registration failed" });
+  }
+};
+
+//route to get personal details and store them
+exports.getDetails = async(req, res) => {
+  console.log("getting details");
+  const {name , age , country , state , email} = req.body;
+  console.log(name , age , country);
+  try{
+    //insert the personal details into the user table
+    const {data , error } = await supabase
+    .from('users')
+    .insert([
+      {
+        name : name,
+        email : email,
+        country : country,
+        state : state,
+        age : age
+      },
+    ]);
+    res.status(201).json({message : "details entered successfully"})
+  }catch(error){
+    console.error("Error during registration:", err);
+    res.status(500).json({ error: "User registration failed" });
+  }
+}
+
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
+  console.log("login route hit")
+  console.log(email , password)
   try {
-    const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ error: "User not found" });
+    //authenticate the user
+    const {data , error} = await supabase
+    .from('login')
+    .select('email,password_hash')
+    .eq('email',email)
+    .single(); //single ensures we get only one result
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ error: "Invalid credentials" });
+    console.log(data);
 
-    // Generate JWT token
-    const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
-
-    res.status(200).json({ token, user: { id: user.id, name: user.name, email: user.email } });
-  } catch (err) {
-    res.status(500).json({ error: "Login failed", details: err.message });
-  }
-};
-
-exports.googleCallback = async (req, res) => {
-  try {
-    const { id, name, email } = req.user; // Extract user details from Passport
-    let user = await User.findOne({ email });
-
-    // If user doesn't exist, create a new one
-    if (!user) {
-      user = new User({ name, email, password: null }); // No password for Google-authenticated users
-      await user.save();
+    if (error || ! data){
+      return res.status(400).json({ message: 'Invalid email or password.' });
     }
 
-    // Generate JWT token
-    const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
+    //compare the password with the stored hashed password using bcrypt
+    const passwordMatch = await bcrypt.compare(password , data.password_hash);
+    console.log(passwordMatch);
+    if(!passwordMatch){
+      return res.status(400).json({ message: 'Invalid email or password.' });
+    }
 
-    // Redirect to the frontend with the token in the query string
-    res.redirect(`${process.env.FRONTEND_URL}/dashboard?token=${token}`);
+    // If email and password are correct, generate a JWT token
+    const token = jwt.sign(
+      { email: data.email },  // Payload, you can add more info here if needed
+      process.env.JWT_SECRET,             // Secret key to sign the token
+      { expiresIn: '1h' }     // Expiration time for the token (1 hour in this case)
+    );
+
+    // Send the token to the frontend
+    res.status(200).json({
+      message: 'Login successful',
+      token,  // Send back the JWT token
+    });
   } catch (err) {
-    res.status(500).json({ error: "Google authentication failed", details: err.message });
+    res.status(500).json({ error: "Login failed" });
   }
 };
