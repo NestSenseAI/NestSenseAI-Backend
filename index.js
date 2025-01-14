@@ -1,14 +1,12 @@
 require('dotenv').config();
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const passport = require('passport');
 const session = require('express-session');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { createClient } = require('@supabase/supabase-js');
-
-//import the routes
-const {register , getDetails , login} = require('./controllers/authController.js')
+const wellnessRoutes = require('./routes/wellnessRoutes'); // Import wellness routes
+const { register, getDetails, login } = require('./controllers/authController');
 
 const app = express();
 
@@ -25,53 +23,37 @@ app.use(
   })
 );
 
-// Passport initialization
+// Passport setup
 app.use(passport.initialize());
 app.use(passport.session());
 
-//supabase connection
-// Supabase credentials from .env
+// Supabase setup
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
-
-// Initialize Supabase client
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-//test the connection - this url can be checked manually to verify whether supabase is connected or not
+// Test Supabase connection
 app.get('/test-supabase', async (req, res) => {
   try {
-    // Perform a lightweight query to check the connection
-    const { data, error } = await supabase.from('users').select('*').limit(1); // Replace 'test_table' with any table name in your Supabase DB
-
+    const { data, error } = await supabase.from('users').select('*').limit(1);
     if (error) {
-      console.error('Supabase error:', error);
-      res.status(500).send('Supabase connection failed.');
-      return;
+      return res.status(500).send('Supabase connection failed.');
     }
-
-    console.log('Supabase is connected!');
     res.status(200).send('Supabase is connected!');
   } catch (err) {
-    console.error('Error connecting to Supabase:', err);
     res.status(500).send('Error connecting to Supabase.');
   }
 });
 
-
-// MongoDB Connection
-
-
-
-// Passport Google OAuth
+// Google OAuth
 passport.use(
   new GoogleStrategy(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: 'http://localhost:5000/auth/google/callback', // Ensure correct callback URL
+      callbackURL: 'http://localhost:5000/auth/google/callback',
     },
     (accessToken, refreshToken, profile, done) => {
-      console.log(profile);
       return done(null, profile);
     }
   )
@@ -90,25 +72,20 @@ app.get('/', (req, res) => {
   res.send('Welcome to the NestSenseAI Backend!');
 });
 
-app.post('/register' , register);
-app.post('/getDetails',getDetails);
-app.post('/login',login)
-// Google OAuth Routes
+app.post('/register', register);
+app.post('/getDetails', getDetails);
+app.post('/login', login);
 
-app.get(
-  '/auth/google',
-  passport.authenticate('google', { scope: ['profile', 'email'] })
-);
+// API Routes
+app.use('/api/wellness', wellnessRoutes); // Add wellness routes under /api prefix
 
-app.get(
-  '/auth/google/callback',
-  passport.authenticate('google', { failureRedirect: '/' }),
-  (req, res) => {
-    res.redirect('/'); // Redirect after successful login
-  }
-);
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Something went wrong!' });
+});
 
-// Start Server
+// Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
