@@ -1,22 +1,30 @@
 require("dotenv").config();
 const express = require("express");
+const session = require("express-session");
 const passport = require("passport");
-const connectDB = require("./config/db");
-const authRoutes = require("./routes/authRoutes");
+const passportConfig = require("./passport-config");
 
 const app = express();
 
-// Middleware
-app.use(express.json());
+app.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUninitialized: true }));
 app.use(passport.initialize());
-require("./config/passport")(passport);
+app.use(passport.session());
 
-// Database Connection
-connectDB();
+passportConfig(passport);
 
-// Routes
-app.use("/auth", authRoutes);
+app.get("/", (req, res) => res.send("Google Auth with Supabase!"));
 
-// Start Server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
+
+app.get(
+  "/auth/google/callback",
+  passport.authenticate("google", { failureRedirect: "/login", successRedirect: "/dashboard" })
+);
+
+app.get("/dashboard", (req, res) => {
+  if (req.isAuthenticated()) res.send(`Hello, ${req.user.name}`);
+  else res.redirect("/auth/google");
+});
+
+app.listen(3000, () => console.log("Server running on http://localhost:3000"));
+ 
