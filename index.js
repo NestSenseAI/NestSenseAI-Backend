@@ -8,7 +8,7 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { createClient } = require('@supabase/supabase-js');
 
 //import the routes
-const {register , getDetails , login} = require('./controllers/authController.js')
+const {register ,getGoogleAuth,  registerWithGoogle ,getDetails , login} = require('./controllers/authController.js')
 
 const app = express();
 
@@ -57,11 +57,6 @@ app.get('/test-supabase', async (req, res) => {
   }
 });
 
-
-// MongoDB Connection
-
-
-
 // Passport Google OAuth
 passport.use(
   new GoogleStrategy(
@@ -91,6 +86,8 @@ app.get('/', (req, res) => {
 });
 
 app.post('/register' , register);
+app.get('/google',getGoogleAuth)
+app.get('/google/callback',registerWithGoogle)
 app.post('/getDetails',getDetails);
 app.post('/login',login)
 // Google OAuth Routes
