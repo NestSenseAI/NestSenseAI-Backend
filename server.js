@@ -3,6 +3,7 @@ const express = require("express");
 const passport = require("passport");
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
+const trackerRoutes = require("./routes/trackerRoutes");
 
 const app = express();
 
@@ -16,6 +17,7 @@ connectDB();
 
 // Routes
 app.use("/auth", authRoutes);
+app.use("/tracker", trackerRoutes); // Add tracker routes
 
 // Start Server
 const PORT = process.env.PORT || 5000;
