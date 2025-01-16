@@ -45,7 +45,12 @@ app.get('/test-supabase', async (req, res) => {
   }
 });
 
-// Google OAuth
+
+// MongoDB Connection
+
+
+
+// Passport Google OAuth
 passport.use(
   new GoogleStrategy(
     {
@@ -72,18 +77,23 @@ app.get('/', (req, res) => {
   res.send('Welcome to the NestSenseAI Backend!');
 });
 
-app.post('/register', register);
-app.post('/getDetails', getDetails);
-app.post('/login', login);
+app.post('/register' , register);
+app.post('/getDetails',getDetails);
+app.post('/login',login)
+// Google OAuth Routes
 
-// API Routes
-app.use('/api/wellness', wellnessRoutes); // Add wellness routes under /api prefix
+app.get(
+  '/auth/google',
+  passport.authenticate('google', { scope: ['profile', 'email'] })
+);
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
-});
+app.get(
+  '/auth/google/callback',
+  passport.authenticate('google', { failureRedirect: '/' }),
+  (req, res) => {
+    res.redirect('/'); // Redirect after successful login
+  }
+);
 
 // Start server
 const PORT = process.env.PORT || 5000;

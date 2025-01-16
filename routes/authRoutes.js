@@ -31,7 +31,7 @@ router.get(
 
       // Check if the user already exists in the database
       let { data: user, error } = await supabase
-        .from("users")
+        .from("login")
         .select("*")
         .eq("email", email)
         .single();
@@ -44,7 +44,7 @@ router.get(
 
       if (!user) {
         // If the user doesn't exist, insert a new user
-        const { data: newUser, error: insertError } = await supabase.from("users").insert([
+        const { data: newUser, error: insertError } = await supabase.from("login").insert([
           {
             google_id: googleId,
             name: displayName,
