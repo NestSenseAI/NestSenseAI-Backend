@@ -6,7 +6,7 @@ const session = require('express-session');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { createClient } = require('@supabase/supabase-js');
 const wellnessRoutes = require('./routes/wellnessRoutes'); // Import wellness routes
-const { register, getDetails, login } = require('./controllers/authController');
+const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 
@@ -77,9 +77,9 @@ app.get('/', (req, res) => {
   res.send('Welcome to the NestSenseAI Backend!');
 });
 
-app.post('/register' , register);
-app.post('/getDetails',getDetails);
-app.post('/login',login)
+
+app.use("/api/auth",authRoutes);
+app.use("/api/wellness",wellnessRoutes);
 // Google OAuth Routes
 
 app.get(
