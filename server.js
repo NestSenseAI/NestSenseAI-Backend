@@ -5,14 +5,13 @@ const session = require("express-session");
 const passport = require("passport");
 const passportConfig = require("./passport-config");
 const authRoutes = require("./routes/authRoutes");
-const trackingRoutes = require("./routes/trackingRoutes");
 const wellnessRoutes = require("./routes/wellnessRoutes");
 
 const app = express();
 
 // CORS Configuration
 const corsOptions = {
-  origin: 'http://localhost:3000',
+  origin: 'http://localhost:5000',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true,
 };
@@ -32,7 +31,6 @@ passportConfig(passport);
 
 // Routes
 app.use("/auth", authRoutes);
-app.use("/tracking", trackingRoutes);
 app.use("/wellness", wellnessRoutes);
 
 // Default Routes
@@ -61,5 +59,5 @@ app.use((err, req, res, next) => {
 });
 
 // Start Server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
