@@ -63,65 +63,6 @@ exports.register = async (req, res) => {
   }
 };
 
-//Route to handle sign up with google
-// Google OAuth registration
-exports.getGoogleAuth = (req, res, next) => {
-  passport.authenticate("google", { scope: ["profile", "email"] })(req, res, next);
-};
-
-exports.registerWithGoogle = async (req, res) => {
-  console.log("Google OAuth route hit");
-
-  try {
-    const { id: googleId, displayName, emails } = req.user;
-    const email = emails && emails[0]?.value;
-    console.log(googleId , email);
-
-    // Check if the user already exists in the database
-    const { data: user, error } = await supabase
-      .from("login")
-      .select("*")
-      .eq("email", email)
-      .single();
-
-    if (error && error.code !== "PGRST116") {
-      return res.status(500).json({ error: "Internal server error" });
-    }
-    console.log("hello")
-    if (!user) {
-      // If the user doesn't exist, insert a new user
-      const { data: newUser, error: insertError } = await supabase.from("login").insert([
-        {
-          google_id: googleId,
-          name: displayName,
-          email,
-        },
-      ]);
-
-      if (insertError) {
-        console.error("Error creating user:", insertError);
-        return res.status(500).json({ error: "Failed to create user" });
-      }
-
-      user = newUser[0];
-    }
-
-    // Generate a JWT token
-    const token = jwt.sign(
-      { id: user.id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
-    );
-
-    // Send response with token
-    res.status(200).json({ message: "Authentication successful", token });
-  } catch (err) {
-    console.error("Error during Google OAuth registration:", err);
-    res.status(500).json({ error: "Authentication failed" });
-  }
-};
-
-
 
 // Route to get personal details and store them
 exports.getDetails = async (req, res) => {
@@ -161,7 +102,7 @@ exports.login = async (req, res) => {
     // Authenticate the user
     const { data, error } = await supabase
       .from("login")
-      .select("email, password_hash")
+      .select("email, password_hash,id")
       .eq("email", email)
       .single(); // single ensures we get only one result
 
@@ -183,10 +124,13 @@ exports.login = async (req, res) => {
       { expiresIn: "1h" } // Token expiration (1 hour)
     );
 
+    const {user_id} = await supabase.from("login").select("id").eq("email",email).single();
+
     // Send the token to the frontend
     res.status(200).json({
       message: "Login successful",
-      token, // Send back the JWT token
+      token,
+      id: data.id
     });
   } catch (err) {
     console.error("Error during login:", err);

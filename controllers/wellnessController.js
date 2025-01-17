@@ -59,34 +59,64 @@ const getEntryById = async (req, res) => {
 // Create a new wellness entry
 const createEntry = async (req, res) => {
   try {
+    console.log('Raw request body:', req.body);
+    console.log('Symptoms array:', req.body.symptoms); // Log symptoms array
+
+    // Initialize symptoms object with all false values
+    const symptomsMap = {
+      sleep_issues: false,
+      physical_discomfort: false,
+      mood_swings: false,
+      appetite_changes: false,
+      fatigue: false,
+      anxiety: false
+    };
+
+    // If symptoms array exists, update the corresponding values to true
+    if (Array.isArray(req.body.symptoms)) {
+      req.body.symptoms.forEach(symptom => {
+        // Convert symptom string to the corresponding database field name
+        const normalizedSymptom = symptom.toLowerCase().replace(' ', '_');
+        if (symptomsMap.hasOwnProperty(normalizedSymptom)) {
+          symptomsMap[normalizedSymptom] = true;
+        }
+      });
+    }
+
+    console.log('Processed symptoms map:', symptomsMap);
+
     const {
       user_id,
       entry_date,
-      feeling_level,
-      energy_level,
-      fatigue,
-      anxiety,
-      sleep_issues,
-      physical_discomfort,
-      mood_swings,
-      appetite_changes
+      moodLevel,
+      energyLevel
     } = req.body;
 
     // Validate required fields
-    if (!user_id || !entry_date || feeling_level === undefined || energy_level === undefined) {
+    if (!user_id || !entry_date || moodLevel === undefined || energyLevel === undefined) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
     const { data, error } = await supabase
-      .from('wellness_entries')
-      .insert([req.body])
+      .from('wellness_entry')
+      .insert([{
+        user_id,
+        entry_date,
+        moodLevel,
+        energyLevel,
+        ...symptomsMap  // Spread all the symptom fields
+      }])
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
+    }
     
     res.status(201).json(data);
   } catch (error) {
+    console.error('Create entry error:', error);
     res.status(500).json({ error: error.message });
   }
 };
