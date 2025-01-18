@@ -51,18 +51,18 @@ app.get('/test-supabase', async (req, res) => {
 
 
 // Passport Google OAuth
-passport.use(
-  new GoogleStrategy(
-    {
-      clientID: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: 'http://localhost:5000/auth/google/callback',
-    },
-    (accessToken, refreshToken, profile, done) => {
-      return done(null, profile);
-    }
-  )
-);
+// passport.use(
+//   new GoogleStrategy(
+//     {
+//       clientID: process.env.GOOGLE_CLIENT_ID,
+//       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+//       callbackURL: 'http://localhost:5000/auth/google/callback',
+//     },
+//     (accessToken, refreshToken, profile, done) => {
+//       return done(null, profile);
+//     }
+//   )
+// );
 
 passport.serializeUser((user, done) => {
   done(null, user);
@@ -80,20 +80,6 @@ app.get('/', (req, res) => {
 
 app.use("/api/auth",authRoutes);
 app.use("/api/wellness",wellnessRoutes);
-// Google OAuth Routes
-
-app.get(
-  '/auth/google',
-  passport.authenticate('google', { scope: ['profile', 'email'] })
-);
-
-app.get(
-  '/auth/google/callback',
-  passport.authenticate('google', { failureRedirect: '/' }),
-  (req, res) => {
-    res.redirect('/'); // Redirect after successful login
-  }
-);
 
 // Start server
 const PORT = process.env.PORT || 5000;
