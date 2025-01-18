@@ -16,6 +16,8 @@ module.exports = (passport) => {
         const { id: googleId, displayName, emails } = profile;
 
         try {
+          console.log(profile); // Debugging line to check profile data
+
           // Check if user exists in Supabase `login` table
           let { data: user, error } = await supabase
             .from("login")
@@ -37,6 +39,7 @@ module.exports = (passport) => {
                   google_id: googleId,
                   name: displayName,
                   email: emails[0].value,
+                  password_hash: "", // Use an empty string or placeholder for Google-authenticated users
                 },
               ])
               .select()
@@ -85,4 +88,3 @@ module.exports = (passport) => {
     }
   });
 };
- 
