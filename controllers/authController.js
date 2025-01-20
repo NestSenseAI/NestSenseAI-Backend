@@ -68,6 +68,7 @@ exports.register = async (req, res) => {
 exports.getDetails = async (req, res) => {
   console.log("Getting details");
   const { name, age, country, state, email } = req.body;
+  console.log(req.body)
 
   try {
     // Insert the personal details into the user table
