@@ -6,9 +6,9 @@ const passportConfig = require("./passport-config");
 const authRoutes = require("./routes/authRoutes");
 const wellnessRoutes = require("./routes/wellnessRoutes");
 const cors = require("cors");
+const axios = require("axios");
 
 const app = express();
-
 
 // CORS Configuration
 const corsOptions = {
@@ -17,6 +17,11 @@ const corsOptions = {
   credentials: true,
 };
 app.use(cors(corsOptions));
+
+// Middleware for parsing request body
+app.use(express.json());  // Make sure this middleware is added to parse JSON request bodies
+
+// Use Auth and Wellness routes
 app.use("/auth", authRoutes);
 app.use("/wellness", wellnessRoutes);
 
@@ -36,7 +41,7 @@ app.use(passport.session());
 // Load Passport.js strategy
 passportConfig(passport);
 
-// Routes
+// Routes for authentication and user dashboard
 app.get("/", (req, res) => {
   res.send("Welcome to Google Authentication with Supabase!");
 });
@@ -66,6 +71,24 @@ app.get("/logout", (req, res) => {
   req.logout(() => {
     res.redirect("/");
   });
+});
+
+// API Route for Chat (handling communication with Python backend)
+app.post("/api/chat", async (req, res) => {
+  const userMessage = req.body.message;
+
+  try {
+    // Send message to Python backend for response
+    const pythonResponse = await axios.post("http://127.0.0.1:5001/chat", {
+      message: userMessage,
+    });
+
+    // Respond with the Python backend's response
+    res.status(200).json(pythonResponse.data);
+  } catch (error) {
+    console.error("Error communicating with Python backend:", error.message);
+    res.status(500).json({ error: "Failed to process the request. Please try again later." });
+  }
 });
 
 // Start the server
