@@ -5,6 +5,7 @@ const passport = require('passport');
 const session = require('express-session');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { createClient } = require('@supabase/supabase-js');
+const axios = require('axios'); // Add axios for making HTTP requests
 const wellnessRoutes = require('./routes/wellnessRoutes'); // Import wellness routes
 const authRoutes = require('./routes/authRoutes');
 const exerciseRoutes = require('./routes/exerciseRoutes');
@@ -46,10 +47,8 @@ app.get('/test-supabase', async (req, res) => {
   }
 });
 
-
 // MongoDB Connection
-
-
+// Add your MongoDB connection logic here (if required)
 
 // Passport Google OAuth
 passport.use(
@@ -78,12 +77,11 @@ app.get('/', (req, res) => {
   res.send('Welcome to the NestSenseAI Backend!');
 });
 
+app.use('/api/auth', authRoutes);
+app.use('/api/wellness', wellnessRoutes);
+app.use('/api/exercise', exerciseRoutes);
 
-app.use("/api/auth",authRoutes);
-app.use("/api/wellness",wellnessRoutes);
-app.use("/api/exercise",exerciseRoutes);
 // Google OAuth Routes
-
 app.get(
   '/auth/google',
   passport.authenticate('google', { scope: ['profile', 'email'] })
@@ -96,6 +94,24 @@ app.get(
     res.redirect('/'); // Redirect after successful login
   }
 );
+
+// Bot API Route (Forwarding to Python Flask Server)
+app.post('/api/chat', async (req, res) => {
+  const userMessage = req.body.message;
+
+  try {
+    // Send message to Flask bot API
+    const pythonResponse = await axios.post('http://127.0.0.1:5001/chat', {
+      message: userMessage,
+    });
+
+    // Respond with the bot's reply
+    res.status(200).json(pythonResponse.data);
+  } catch (error) {
+    console.error('Error connecting to Python bot API:', error.message);
+    res.status(500).json({ error: 'Failed to connect to bot API' });
+  }
+});
 
 // Start server
 const PORT = process.env.PORT || 5000;
