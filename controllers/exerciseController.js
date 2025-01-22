@@ -104,8 +104,46 @@ const getPlanDetailsHandler = async (req, res) => {
     }
 };
 
+//custom plan controller
+const createCustomPlan = async (req, res) => {
+    const { planDetails, weeks } = req.body;
+    console.log(planDetails, weeks);
+    res.status(200).json({ message: 'Custom plan created successfully' });
+};
+
+//get activities
+const getActivities = async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('activities')
+            .select('*');
+
+        if (error) {
+            throw error;
+        }
+
+        console.log('Fetched activities:', data); // Debug log
+        res.status(200).json(data);
+    } catch (error) {
+        console.error('Error fetching activities:', error);
+        res.status(500).json({ error: 'Failed to fetch activities' });
+    }
+};
+
+//get meals
+const getMeals = async (req, res) => {
+    const { data, error } = await supabase
+        .from('meals')
+        .select('*');
+    console.log(data);
+    res.json(data);
+};
+
 // Export the middleware for usage in routes
 module.exports = {
     getPlans,
-    getPlanDetailsHandler
+    getPlanDetailsHandler,
+    createCustomPlan,
+    getActivities,
+    getMeals
 };

@@ -9,7 +9,8 @@ const axios = require('axios'); // Add axios for making HTTP requests
 const wellnessRoutes = require('./routes/wellnessRoutes'); // Import wellness routes
 const authRoutes = require('./routes/authRoutes');
 const exerciseRoutes = require('./routes/exerciseRoutes');
-
+const passportConfig = require("./passport-config");
+const googleAuthRoutes = require('./google-auth-supabase/server');
 const app = express();
 
 // Middleware
@@ -25,9 +26,6 @@ app.use(
   })
 );
 
-// Passport setup
-app.use(passport.initialize());
-app.use(passport.session());
 
 // Supabase setup
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -47,30 +45,7 @@ app.get('/test-supabase', async (req, res) => {
   }
 });
 
-// MongoDB Connection
-// Add your MongoDB connection logic here (if required)
 
-// Passport Google OAuth
-passport.use(
-  new GoogleStrategy(
-    {
-      clientID: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: 'http://localhost:5000/auth/google/callback',
-    },
-    (accessToken, refreshToken, profile, done) => {
-      return done(null, profile);
-    }
-  )
-);
-
-passport.serializeUser((user, done) => {
-  done(null, user);
-});
-
-passport.deserializeUser((user, done) => {
-  done(null, user);
-});
 
 // Routes
 app.get('/', (req, res) => {
@@ -80,20 +55,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/wellness', wellnessRoutes);
 app.use('/api/exercise', exerciseRoutes);
-
-// Google OAuth Routes
-app.get(
-  '/auth/google',
-  passport.authenticate('google', { scope: ['profile', 'email'] })
-);
-
-app.get(
-  '/auth/google/callback',
-  passport.authenticate('google', { failureRedirect: '/' }),
-  (req, res) => {
-    res.redirect('/'); // Redirect after successful login
-  }
-);
+app.use('/', googleAuthRoutes);
 
 // Bot API Route (Forwarding to Python Flask Server)
 app.post('/api/chat', async (req, res) => {
@@ -101,7 +63,7 @@ app.post('/api/chat', async (req, res) => {
 
   try {
     // Send message to Flask bot API
-    const pythonResponse = await axios.post('http://127.0.0.1:5001/chat', {
+    const pythonResponse = await axios.post('http://127.0.0.1:3002/chat', {
       message: userMessage,
     });
 
@@ -114,7 +76,7 @@ app.post('/api/chat', async (req, res) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 5000;
+const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
