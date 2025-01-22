@@ -5,6 +5,7 @@ const passport = require("passport");
 const passportConfig = require("./passport-config");
 
 const app = express();
+router = express.Router();
 
 // Middleware for session handling
 app.use(
@@ -23,16 +24,16 @@ app.use(passport.session());
 passportConfig(passport);
 
 // Routes
-app.get("/", (req, res) => {
+router.get("/", (req, res) => {
   res.send("Welcome to Google Authentication with Supabase!");
 });
 
-app.get(
+router.get(
   "/auth/google",
   passport.authenticate("google", { scope: ["profile", "email"] })
 );
 
-app.get(
+router.get(
   "/auth/google/callback",
   passport.authenticate("google", {
     failureRedirect: "/login",
@@ -40,7 +41,7 @@ app.get(
   })
 );
 
-app.get("/dashboard", (req, res) => {
+router.get("/dashboard", (req, res) => {
   if (req.isAuthenticated()) {
     res.send(`Hello, ${req.user.name}`);
   } else {
@@ -48,14 +49,10 @@ app.get("/dashboard", (req, res) => {
   }
 });
 
-app.get("/logout", (req, res) => {
+router.get("/logout", (req, res) => {
   req.logout(() => {
     res.redirect("/");
   });
 });
 
-// Start the server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+module.exports = router;
