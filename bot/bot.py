@@ -1,26 +1,23 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import json
+import random
 
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)  # Enable CORS for cross-origin requests
 
-# Load the datasets
-with open('data1.json', 'r') as file1:
-    bot_data_1 = json.load(file1)
-
-with open('data2.json', 'r') as file2:
-    bot_data_2 = json.load(file2)
-
-# Combine the datasets
-bot_data = bot_data_1 + bot_data_2
+# Load the intent-based dataset
+with open('intent_based_data.json', 'r') as file:
+    bot_data = json.load(file)
 
 # Function to find a response based on user query
 def find_response(user_query):
-    for entry in bot_data:
-        if any(keyword.lower() in user_query.lower() for keyword in entry['Keywords']):
-            return entry['BotResponse']
+    for intent in bot_data:
+        # Check if the user query matches any pattern in the intent
+        if any(pattern.lower() in user_query.lower() for pattern in intent['Patterns']):
+            # Randomly select a response to make conversations dynamic
+            return random.choice(intent['Responses'])
     return "I'm sorry, I couldn't find an answer to that. Can you try asking in a different way?"
 
 # Chat API endpoint
