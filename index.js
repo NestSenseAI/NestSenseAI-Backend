@@ -63,7 +63,7 @@ app.post('/api/chat', async (req, res) => {
 
   try {
     // Send message to Flask bot API
-    const pythonResponse = await axios.post('http://127.0.0.1:3002/chat', {
+    const pythonResponse = await axios.post('http://127.0.0.1:5001/chat', {
       message: userMessage,
     });
 
@@ -76,7 +76,7 @@ app.post('/api/chat', async (req, res) => {
 });
 
 // Start server
-const PORT = 3000;
+const PORT = 5000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
