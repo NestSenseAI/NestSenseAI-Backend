@@ -132,11 +132,22 @@ const getActivities = async (req, res) => {
 
 //get meals
 const getMeals = async (req, res) => {
-    const { data, error } = await supabase
-        .from('meals')
-        .select('*');
-    console.log(data);
-    res.json(data);
+    try {
+        const { data, error } = await supabase
+            .from('meals')
+            .select('meal_id,meal_name,nutritional_value,purpose');
+
+        if (error) {
+            throw error;
+        }
+
+        console.log('Fetched meals:', data); // Debug log
+        res.status(200).json(data);
+    } catch (error) {
+        console.error('Error fetching activities:', error);
+        res.status(500).json({ error: 'Failed to fetch activities' });
+    }
+    
 };
 
 // Export the middleware for usage in routes
