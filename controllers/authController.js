@@ -117,6 +117,9 @@ exports.login = async (req, res) => {
     if (!passwordMatch) {
       return res.status(400).json({ message: "Invalid email or password." });
     }
+    else{
+      console.log("password matched")
+    }
 
     // If email and password are correct, generate a JWT token
     const token = jwt.sign(
