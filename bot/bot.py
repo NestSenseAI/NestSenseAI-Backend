@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import json
 import random
+import os
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -43,5 +44,6 @@ def chat():
 
 # Run the Flask server
 if __name__ == "__main__":
-    print("Starting server on http://127.0.0.1:5001")
-    app.run(debug=True, port=5001)
+    port = int(os.getenv("PORT", 5001))  # Use Render's PORT or default to 5001
+    print(f"Starting server on http://0.0.0.0:{port}")
+    app.run(host="0.0.0.0", port=port, debug=False)
