@@ -1,30 +1,20 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import json
-import random
-import os
 
-# Initialize Flask app
 app = Flask(__name__)
-CORS(app, resources={"/chat": {"origins": "*"}})  # Allow CORS on /chat route
+CORS(app, resources={r"/*": {"origins": "*"}})  # Allow all origins
 
-# Load the intent-based dataset
-with open('intent_based_data.json', 'r') as file:
-    bot_data = json.load(file)
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"  # Allow all origins
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    return response
 
-# Function to find a response based on user query
-def find_response(user_query):
-    for intent in bot_data:
-        if any(pattern.lower() in user_query.lower() for pattern in intent['Patterns']):
-            return random.choice(intent['Responses'])
-    return "I'm sorry, I couldn't find an answer to that. Can you try asking in a different way?"
-
-# Handle CORS Preflight requests
 @app.route('/chat', methods=['OPTIONS'])
-def preflight():
-    return '', 204  # Return an empty response with HTTP 204 (No Content)
+def handle_options():
+    return '', 204  # Empty response for preflight
 
-# Chat API endpoint
 @app.route('/chat', methods=['POST'])
 def chat():
     data = request.json
@@ -33,11 +23,8 @@ def chat():
     if not user_message.strip():
         return jsonify({"status": "error", "message": "Message is required"}), 400
 
-    response = find_response(user_message)
-    return jsonify({"status": "success", "user_message": user_message, "bot_reply": response})
+    response_text = "I received: " + user_message
+    return jsonify({"status": "success", "bot_reply": response_text})
 
-# Run Flask server with dynamic port for Render
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 10000))  # Render dynamically assigns PORT
-    print(f"Starting server on http://0.0.0.0:{port}")
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host="0.0.0.0", port=10000, debug=False)
