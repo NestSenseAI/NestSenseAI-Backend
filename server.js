@@ -79,7 +79,7 @@ app.post("/api/chat", async (req, res) => {
 
   try {
     // Send message to Python backend for response
-    const pythonResponse = await axios.post("https://nestsenseai-solace.onrender.com/api/chat", {
+    const pythonResponse = await axios.post("https://nestsenseai-solace.onrender.com/chat", {
       message: userMessage,
     });
 
