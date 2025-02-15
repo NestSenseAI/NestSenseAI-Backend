@@ -14,7 +14,10 @@ const googleAuthRoutes = require('./google-auth-supabase/server');
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ['https://nest-sense-ai.vercel.app', 'http://localhost:5173'], // Adjust frontend origins
+  methods: ['GET', 'POST', 'OPTIONS'],
+  credentials: true}));
 app.use(express.json());
 
 // Session setup
@@ -57,17 +60,16 @@ app.use('/api/wellness', wellnessRoutes);
 app.use('/api/exercise', exerciseRoutes);
 app.use('/', googleAuthRoutes);
 
-// Bot API Route (Forwarding to Python Flask Server)
+// Chat API Route (Forwarding to Python Flask Server)
 app.post('/api/chat', async (req, res) => {
   const userMessage = req.body.message;
 
   try {
-    // Send message to Flask bot API
+    // Ensure the URL matches the Python bot's correct endpoint
     const pythonResponse = await axios.post('https://nestsenseai-solace.onrender.com/chat', {
       message: userMessage,
     });
 
-    // Respond with the bot's reply
     res.status(200).json(pythonResponse.data);
   } catch (error) {
     console.error('Error connecting to Python bot API:', error.message);
