@@ -63,7 +63,7 @@ app.post('/api/chat', async (req, res) => {
 
   try {
     // Send message to Flask bot API
-    const pythonResponse = await axios.post('http://127.0.0.1:5001/chat', {
+    const pythonResponse = await axios.post('https://nestsenseai-solace.onrender.com/chat', {
       message: userMessage,
     });
 
