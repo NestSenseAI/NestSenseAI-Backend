@@ -6,7 +6,7 @@ import os
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app, resources={r"/chat": {"origins": "*"}})  # Allow CORS on /chat route
+CORS(app, resources={"/chat": {"origins": "*"}})  # Allow CORS on /chat route
 
 # Load the intent-based dataset
 with open('intent_based_data.json', 'r') as file:
