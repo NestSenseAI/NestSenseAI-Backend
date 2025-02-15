@@ -12,7 +12,7 @@ const app = express();
 
 // CORS Configuration
 const corsOptions = {
-  origin: 'http://localhost:3000',
+  origin: ["http://localhost:3000", "https://nest-sense-ai.vercel.app"],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true,
 };
@@ -79,7 +79,7 @@ app.post("/api/chat", async (req, res) => {
 
   try {
     // Send message to Python backend for response
-    const pythonResponse = await axios.post("http://127.0.0.1:5001/chat", {
+    const pythonResponse = await axios.post("https://nestsenseai-solace.onrender.com/chat", {
       message: userMessage,
     });
 
