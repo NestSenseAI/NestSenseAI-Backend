@@ -7,7 +7,7 @@ router.post("/api/chat", async (req, res) => {
   const userMessage = req.body.message;
 
   try {
-    const pythonResponse = await axios.post("http://127.0.0.1:5001/chat", {
+    const pythonResponse = await axios.post("https://nestsenseai-solace.onrender.com/chat", {
       message: userMessage,
     });
 
