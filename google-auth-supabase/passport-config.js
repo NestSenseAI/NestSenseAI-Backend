@@ -1,5 +1,6 @@
 const { createClient } = require("@supabase/supabase-js");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
+require("dotenv").config();
 
 // Initialize Supabase client
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
@@ -10,28 +11,30 @@ module.exports = (passport) => {
       {
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL: "/auth/google/callback",
+        callbackURL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:5000/auth/google/callback", // Fix redirect_uri_mismatch
       },
       async (accessToken, refreshToken, profile, done) => {
         const { id: googleId, displayName, emails } = profile;
 
         try {
-          console.log(profile); // Debugging line to check profile data
+          console.log("🔹 Google Profile:", profile); // Debugging
 
           // Check if user exists in Supabase `login` table
           let { data: user, error } = await supabase
             .from("login")
-            .select("*")
+            .select("id, google_id, name, email")
             .eq("google_id", googleId)
             .single();
 
           if (error && error.code !== "PGRST116") {
-            console.error("Supabase error:", error);
+            console.error("❌ Supabase error:", error);
             return done(error, null);
           }
 
           if (!user) {
-            // If user doesn't exist, insert a new record
+            console.log("ℹ️ User not found. Creating new user...");
+
+            // Insert new user into the `login` table
             const { data: newUser, error: insertError } = await supabase
               .from("login")
               .insert([
@@ -39,52 +42,59 @@ module.exports = (passport) => {
                   google_id: googleId,
                   name: displayName,
                   email: emails[0].value,
-                  password_hash: "", // Use an empty string or placeholder for Google-authenticated users
+                  password_hash: "", // Google-authenticated users don’t need a password
                 },
               ])
-              .select()
+              .select("id, google_id, name, email")
               .single();
 
             if (insertError) {
-              console.error("Error inserting user:", insertError);
+              console.error("❌ Error inserting user:", insertError);
               return done(insertError, null);
             }
 
             user = newUser;
+            console.log("✅ New user created:", user);
+          } else {
+            console.log("✅ Existing user logged in:", user);
           }
 
-          done(null, user);
+          return done(null, user);
         } catch (err) {
-          console.error("Error during Google authentication:", err);
-          done(err, null);
+          console.error("❌ Error during Google authentication:", err);
+          return done(err, null);
         }
       }
     )
   );
 
-  // Serialize user for session
+  // Serialize user by storing `google_id` in session
   passport.serializeUser((user, done) => {
-    done(null, user.id); // Save user ID in session
+    console.log("ℹ️ Serializing user:", user.google_id);
+    done(null, user.google_id);
   });
 
-  // Deserialize user from session
-  passport.deserializeUser(async (id, done) => {
+  // Deserialize user by fetching from Supabase using `google_id`
+  passport.deserializeUser(async (googleId, done) => {
     try {
+      console.log("ℹ️ Deserializing user:", googleId);
+
       const { data: user, error } = await supabase
         .from("login")
-        .select("*")
-        .eq("id", id)
+        .select("id, google_id, name, email")
+        .eq("google_id", googleId)
         .single();
 
       if (error) {
-        console.error("Error fetching user:", error);
+        console.error("❌ Error fetching user during deserialization:", error);
         return done(error, null);
       }
 
-      done(null, user);
+      console.log("✅ User deserialized:", user);
+      return done(null, user);
     } catch (err) {
-      console.error("Error during deserialization:", err);
-      done(err, null);
+      console.error("❌ Error during deserialization:", err);
+      return done(err, null);
     }
   });
 };
