@@ -1,5 +1,6 @@
 const { createClient } = require("@supabase/supabase-js");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
+require("dotenv").config();
 
 // Initialize Supabase client
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
@@ -10,18 +11,18 @@ module.exports = (passport) => {
       {
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL: "/auth/google/callback",
+        callbackURL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:5000/auth/google/callback",
       },
       async (accessToken, refreshToken, profile, done) => {
         const { id: googleId, displayName, emails } = profile;
 
         try {
-          console.log(profile); // Debugging line to check profile data
+          console.log("Google Profile:", profile);
 
           // Check if user exists in Supabase `login` table
           let { data: user, error } = await supabase
             .from("login")
-            .select("*")
+            .select("id, google_id, name, email")
             .eq("google_id", googleId)
             .single();
 
@@ -31,7 +32,7 @@ module.exports = (passport) => {
           }
 
           if (!user) {
-            // If user doesn't exist, insert a new record
+            // Insert a new user
             const { data: newUser, error: insertError } = await supabase
               .from("login")
               .insert([
@@ -39,10 +40,10 @@ module.exports = (passport) => {
                   google_id: googleId,
                   name: displayName,
                   email: emails[0].value,
-                  password_hash: "", // Use an empty string or placeholder for Google-authenticated users
+                  password_hash: "", // No password needed for Google-authenticated users
                 },
               ])
-              .select()
+              .select("id, google_id, name, email")
               .single();
 
             if (insertError) {
@@ -62,22 +63,22 @@ module.exports = (passport) => {
     )
   );
 
-  // Serialize user for session
+  // Serialize user by storing `google_id`
   passport.serializeUser((user, done) => {
-    done(null, user.id); // Save user ID in session
+    done(null, user.google_id);
   });
 
-  // Deserialize user from session
-  passport.deserializeUser(async (id, done) => {
+  // Deserialize user by fetching from Supabase using `google_id`
+  passport.deserializeUser(async (googleId, done) => {
     try {
       const { data: user, error } = await supabase
         .from("login")
-        .select("*")
-        .eq("id", id)
+        .select("id, google_id, name, email")
+        .eq("google_id", googleId)
         .single();
 
       if (error) {
-        console.error("Error fetching user:", error);
+        console.error("Error fetching user during deserialization:", error);
         return done(error, null);
       }
 
