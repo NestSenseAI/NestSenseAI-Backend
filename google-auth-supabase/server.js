@@ -36,8 +36,8 @@ router.get(
 router.get(
   "/auth/google/callback",
   passport.authenticate("google", {
-    failureRedirect: "/login",
-    successRedirect: "/dashboard",
+    failureRedirect: "https://nest-sense-ai.vercel.app/auth",
+    successRedirect: "https://nest-sense-ai.vercel.app/dashboard",
   })
 );
 
