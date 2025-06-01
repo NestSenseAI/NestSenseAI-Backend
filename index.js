@@ -15,7 +15,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: ['https://nest-sense-ai.vercel.app', 'http://localhost:5173'], // Adjust frontend origins
+  origin: ['https://nest-sense-ai.vercel.app', 'http://localhost:3000'], // Adjust frontend origins
   methods: ['GET', 'POST', 'OPTIONS'],
   credentials: true}));
 app.use(express.json());
