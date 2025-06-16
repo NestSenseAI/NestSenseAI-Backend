@@ -1,14 +1,23 @@
-const express = require("express");
-const passport = require("passport");
-const jwt = require("jsonwebtoken");
-const { getPlans, getPlanDetailsHandler, createCustomPlan, getActivities, getMeals } = require("../controllers/exerciseController");
-
+const express = require('express');
 const router = express.Router();
 
-router.get("/getPlans", getPlans);
-router.get("/getPlanDetails/:planId", getPlanDetailsHandler);
-router.post("/createCustomPlan", createCustomPlan);
-router.get("/getActivities", getActivities);
-router.get("/getMeals", getMeals);
-module.exports = router;
+const {
+    getPlans,
+    getPlanDetailsHandler,
+    createCustomPlan,
+    getActivities,
+    getMeals,
+    getExerciseRecommendations // 👈 Import the new controller
+} = require('../controllers/exerciseController');
 
+// Existing routes
+router.get('/plans', getPlans);
+router.get('/plans/:id', getPlanDetailsHandler);
+router.post('/plans/custom', createCustomPlan);
+router.get('/activities', getActivities);
+router.get('/meals', getMeals);
+
+// New route for exercise recommendations
+router.post('/recommend', getExerciseRecommendations); // 👈 POST endpoint
+
+module.exports = router;
