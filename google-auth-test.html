@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Google Auth Test</title>
+</head>
+<body>
+    <h1>Google Auth Test</h1>
+    <button onclick="signInWithGoogle()">Sign in with Google</button>
+    <pre id="status"></pre>
+
+    <script>
+        function signInWithGoogle() {
+            // Log the attempt
+            console.log('Attempting Google Sign In...');
+            document.getElementById('status').textContent = 'Redirecting to Google...';
+            
+            // Redirect to your backend's Google auth endpoint
+            window.location.href = 'https://my-backend-bjtb.onrender.com/auth/google';
+        }
+
+        // Check auth status on load
+        fetch('https://my-backend-bjtb.onrender.com/auth/status', {
+            credentials: 'include'
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Auth Status:', data);
+            document.getElementById('status').textContent = 'Auth Status: ' + JSON.stringify(data, null, 2);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('status').textContent = 'Error checking auth status: ' + error.message;
+        });
+    </script>
+</body>
+</html> 
