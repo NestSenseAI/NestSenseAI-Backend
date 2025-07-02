@@ -3,16 +3,29 @@ const express = require("express");
 const session = require("express-session");
 const passport = require("passport");
 const passportConfig = require("./passport-config");
+const cors = require("cors");
 
 const app = express();
 router = express.Router();
+
+// CORS configuration
+app.use(cors({
+  origin: process.env.FRONTEND_URL || "https://nest-sense-ai.vercel.app",
+  credentials: true
+}));
 
 // Middleware for session handling
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production", // Use secure cookies in production
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Required for cross-site cookie
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    },
+    proxy: true // Required when running behind a proxy (like on Render)
   })
 );
 
@@ -36,22 +49,29 @@ router.get(
 router.get(
   "/auth/google/callback",
   passport.authenticate("google", {
-    failureRedirect: "https://nest-sense-ai.vercel.app/auth",
-    successRedirect: "https://nest-sense-ai.vercel.app/dashboard",
+    failureRedirect: `${process.env.FRONTEND_URL || "https://nest-sense-ai.vercel.app"}/auth`,
+    successRedirect: `${process.env.FRONTEND_URL || "https://nest-sense-ai.vercel.app"}/dashboard`,
   })
 );
 
+router.get("/auth/status", (req, res) => {
+  res.json({
+    authenticated: req.isAuthenticated(),
+    user: req.user
+  });
+});
+
 router.get("/dashboard", (req, res) => {
   if (req.isAuthenticated()) {
-    res.send(`Hello, ${req.user.name}`);
+    res.json({ user: req.user });
   } else {
-    res.redirect("/auth/google");
+    res.status(401).json({ error: "Not authenticated" });
   }
 });
 
 router.get("/logout", (req, res) => {
   req.logout(() => {
-    res.redirect("/");
+    res.redirect(process.env.FRONTEND_URL || "https://nest-sense-ai.vercel.app");
   });
 });
 
